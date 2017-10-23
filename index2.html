@@ -19,9 +19,7 @@
 
             ws.onmessage = function (evt)
             {
-               console.log(evt);
-               let received_msg = evt.data;
-               console.log("Message is received => "+received_msg);
+               console.log("Message is received => " + evt.data);
             };
 
             ws.onclose = (evt) => {

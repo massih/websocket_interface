@@ -39,11 +39,7 @@ class WebsocketInterface(object):
         targets = self.clients[msg['topic']] if msg['topic'] in self.clients else []
         # print('sending for {} in {} category'.format(len(targets), msg['topic']))
         for target in targets:
-            print(msg['topic'])
-            print(msg['data'])
-            print('-' * 20)
-            print(target)
-            target.send('HELLO MOTHER FUCKER')
+            await target.send(msg['data'])
 
     async def start(self):
         asyncio.ensure_future(self.init_websocket())
