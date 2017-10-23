@@ -1,0 +1,47 @@
+<!DOCTYPE HTML>
+<html>
+   <head>
+
+      <script type="text/javascript">
+            let ws = new WebSocket("ws://localhost:8889");
+            let message = {
+               topic: 'topic',
+               data: 'bullshit data'
+            };
+
+            ws.onopen = function()
+            {
+               console.log("Connection opened...");
+               ws.send(JSON.stringify(message));
+               console.log("Message is sent...");
+
+            };
+
+            ws.onmessage = function (evt)
+            {
+               console.log(evt);
+               let received_msg = evt.data;
+               console.log("Message is received => "+received_msg);
+            };
+
+            ws.onclose = (evt) => {
+               console.log('connection closed')
+               console.log(evt)
+            };
+
+            function send_msg() {
+               ws.send(JSON.stringify(message));
+               console.log("Message is sent...");
+            }
+
+      </script>
+
+   </head>
+   <body>
+      <p> HELLO </p>
+      <div id="sse">
+         <button onclick="send_msg()"> SEND THE MESSAGE </button>
+      </div>
+
+   </body>
+</html>
