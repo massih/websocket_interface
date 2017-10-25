@@ -1,0 +1,9 @@
+To run test:
+    1- Start a webserver to serve both index.html and index2.html:
+        python3 -m http.server 8888
+
+    2- Open as many as websockets clients you want for both index pages to subscribe
+    on different topics. In this clients subscribe to 2 different topics, which are: "topic" and "topic2"
+
+    3- Run test_redis_publisher. Clients should receive websockets messages based on topics that they
+    subscribed e.g clients that subscribed to 'topic2' should only receive 'data21' and 'data22'

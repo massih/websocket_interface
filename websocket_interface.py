@@ -5,13 +5,17 @@ import json
 import aioredis
 import websockets
 
+HOST = 'localhost'
+REDIS_PORT = '6379'
+WEBSOCKET_PORT = 8889
+
 
 class WebsocketInterface(object):
     def __init__(self):
         self.clients = {}
 
     async def init_redis(self):
-        _redis = await aioredis.create_redis(('localhost', '6379'))
+        _redis = await aioredis.create_redis((HOST, REDIS_PORT))
         sub = await _redis.subscribe('websocket_interface')
         return sub[0]
 
@@ -22,22 +26,27 @@ class WebsocketInterface(object):
             asyncio.ensure_future(self.websocket_publisher(msg))
 
     async def init_websocket(self):
-        await websockets.serve(self.websocket_handler, 'localhost', 8889)
+        await websockets.serve(self.websocket_handler, HOST, WEBSOCKET_PORT)
 
     async def websocket_handler(self, websocket, _):
         message = json.loads(await websocket.recv())
-        self.clients.setdefault(message['topic'], set()).add(websocket)
-        # print(['topic {} has {} clients'.format(k, len(v)) for k, v in self.clients.items()])
-        await self.websocket_consumer(websocket)
+        self.add_client(message['topic'], websocket)
+        await self.websocket_consumer(message['topic'], websocket)
 
-    async def websocket_consumer(self, websocket):
-        while True:
-            message = json.loads(await websocket.recv())
-            print('someone send -> {}'.format(message))
+    def add_client(self, topic, websocket):
+        self.clients.setdefault(topic, set()).add(websocket)
+        print('client added to topic => {}'.format(topic))
+
+    async def websocket_consumer(self, topic, websocket):
+        try:
+            while True:
+                message = json.loads(await websocket.recv())
+                self.add_client(message['topic'], websocket)
+        except websockets.exceptions.ConnectionClosed:
+            self.clients[topic].remove(websocket)
 
     async def websocket_publisher(self, msg):
         targets = self.clients[msg['topic']] if msg['topic'] in self.clients else []
-        # print('sending for {} in {} category'.format(len(targets), msg['topic']))
         for target in targets:
             await target.send(msg['data'])
 
@@ -50,7 +59,7 @@ class WebsocketInterface(object):
 def main():
     loop = asyncio.get_event_loop()
     server = WebsocketInterface()
-    loop.run_until_complete(server.start())
+    asyncio.ensure_future(server.start())
     loop.run_forever()
 
 
