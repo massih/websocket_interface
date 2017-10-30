@@ -30,19 +30,29 @@ class WebsocketInterface(object):
 
     async def websocket_handler(self, websocket, _):
         message = json.loads(await websocket.recv())
-        self.add_client(message['topic'], websocket)
-        await self.websocket_consumer(message['topic'], websocket)
-
-    def add_client(self, topic, websocket):
-        self.clients.setdefault(topic, set()).add(websocket)
-        print('client added to topic => {}'.format(topic))
+        if self.is_message_valid(message):
+            self.websocket_client_handler(message['action'], message['topic'], websocket)
+            await self.websocket_consumer(message['topic'], websocket)
 
     async def websocket_consumer(self, topic, websocket):
+        new_topic = None
         try:
             while True:
                 message = json.loads(await websocket.recv())
-                self.add_client(message['topic'], websocket)
+                if self.is_message_valid(message):
+                    new_topic = message['topic']
+                    self.websocket_client_handler(message['action'], new_topic, websocket)
         except websockets.exceptions.ConnectionClosed:
+            self.clients[new_topic or topic].remove(websocket)
+
+    @staticmethod
+    def is_message_valid(message):
+        return all(keys in message for keys in ['action', 'topic']) and message['action'] in ['subscribe', 'unsubscribe'] 
+
+    def websocket_client_handler(self, action, topic, websocket):
+        if action == 'subscribe':
+            self.clients.setdefault(topic, set()).add(websocket)
+        else:
             self.clients[topic].remove(websocket)
 
     async def websocket_publisher(self, msg):
